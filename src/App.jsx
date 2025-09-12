@@ -10,7 +10,9 @@ import ViewProducts from "./Components/ViewProducts/ViewProducts.jsx";
 import PendingOrders from "./Components/PendingOrders/PendingOrders.jsx";
 import CompletedOrders from "./Components/CompleteOrder/CompleteOrders.jsx";
 import Menu from "./Components/Menu/Menu.jsx";
+import MyOrders from "./Components/MyOrders/MyOrders.jsx";
 import ForgotPassword from "./Components/ForgotPassword/ForgotPassword.jsx";
+import CustomerReviews from "./Components/CustomerReviews/CustomerReviews.jsx";
 import customerImg from "./assets/perfect customer istockphoto.com.jpeg";
 
 export default function App() {
@@ -129,10 +131,11 @@ export default function App() {
         <Route path="/PendingOrders" element={<PendingOrders />} />
         <Route path="/CompleteOrders" element={<CompletedOrders />} />
         <Route path="/Menu" element={<Menu />} />
-
-        {/* ✅ Forgot Password Route */}
+        <Route path="/MyOrders" element={<MyOrders />} />
         <Route path="/ForgotPassword" element={<ForgotPassword />} />
+         <Route path="/CustomerReviews" element={<CustomerReviews />} />
       </Routes>
     </div>
   );
 }
+

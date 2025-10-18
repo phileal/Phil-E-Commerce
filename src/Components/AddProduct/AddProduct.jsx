@@ -9,12 +9,34 @@ export default function AddProduct() {
   const [description, setDescription] = useState("");
   const [rating, setRating] = useState(0);
   const [productsMenu, setProductsMenu] = useState(true);
+
+  // Marquee states
   const [marqueeText, setMarqueeText] = useState("");
   const [marqueeColor, setMarqueeColor] = useState("#ffffff");
-
+  const [marqueeBgColor, setMarqueeBgColor] = useState("#1f2937"); // default gray-800
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const sidebarRef = useRef(null);
+
+  // Toast state
+  const [toast, setToast] = useState({ show: false, message: "", type: "success" });
+
+  const showToast = (message, type = "success") => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast({ show: false, message: "", type }), 3000);
+  };
+
+// Load marquee from localStorage
+useEffect(() => {
+  const savedMarquee = localStorage.getItem("marquee");
+  if (savedMarquee) {
+    const { text: loadedText, color: loadedColor, bgColor: loadedBg } = JSON.parse(savedMarquee);
+    setMarqueeText(loadedText || "");
+    setMarqueeColor(loadedColor || "#ffffff");
+    setMarqueeBgColor(loadedBg || "#1f2937");
+  }
+}, []);
+
 
   // Close sidebar when clicking outside
   useEffect(() => {
@@ -33,38 +55,55 @@ export default function AddProduct() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [sidebarOpen]);
 
-  const handleSubmit = (e) => {
+  // Submit product (mock API)
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const product = { name, price, category, image, description, rating };
+    const product = { name, price: parseFloat(price), category, image, description, rating };
 
-    const existing = JSON.parse(localStorage.getItem("shopsProducts")) || [];
-    existing.push(product);
-    localStorage.setItem("shopsProducts", JSON.stringify(existing));
+    try {
+      const res = await fetch("/api/products", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(product),
+      });
 
-    alert("Product added!");
-    setName("");
-    setPrice("");
-    setCategory("Men's Clothing");
-    setImage("");
-    setDescription("");
-    setRating(0);
+      if (res.ok) {
+        showToast("Product added successfully!", "success");
+        setName("");
+        setPrice("");
+        setCategory("Men's Clothing");
+        setImage("");
+        setDescription("");
+        setRating(0);
+      } else {
+        showToast("Failed to add product.", "error");
+      }
+    } catch (error) {
+      console.error("Error adding product:", error);
+      showToast("Error adding product. Check console.", "error");
+    }
+  };
+
+  // Save marquee to localStorage
+  const saveMarquee = () => {
+   const marquee = { text: marqueeText, textColor: marqueeColor, bgColor: marqueeBgColor };
+    localStorage.setItem("marquee", JSON.stringify(marquee));
+    showToast("Marquee saved successfully!", "success");
   };
 
   return (
-    <div className="flex flex-col md:flex-row min-h-screen bg-gray-900 text-gray-200">
+    <div className="flex flex-col md:flex-row min-h-screen bg-gray-900 text-gray-200 relative">
       {/* Sidebar */}
       <aside
         ref={sidebarRef}
-        className={`fixed md:static z-20 inset-y-0 left-0 transform ${sidebarOpen ? "translate-x-0" : "-translate-x-full"
-          } md:translate-x-0 transition-transform duration-300 ease-in-out w-60 bg-gray-800 p-6`}
+        className={`fixed md:static z-20 inset-y-0 left-0 transform ${
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        } md:translate-x-0 transition-transform duration-300 ease-in-out w-60 bg-gray-800 p-6`}
       >
         <h2 className="text-xl font-bold text-blue-400 mb-6">Admin Panel</h2>
         <nav className="space-y-2">
-          <Link
-            to="/AdminDashboard"
-            className="block py-2 px-3 rounded-lg hover:bg-gray-700"
-          >
+          <Link to="/AdminDashboard" className="block py-2 px-3 rounded-lg hover:bg-gray-700">
             Dashboard
           </Link>
           <div>
@@ -76,16 +115,10 @@ export default function AddProduct() {
             </button>
             {productsMenu && (
               <div className="space-y-1 pl-4 mt-1">
-                <Link
-                  to="/AddProduct"
-                  className="block py-2 px-3 rounded-lg bg-gray-700"
-                >
+                <Link to="/AddProduct" className="block py-2 px-3 rounded-lg bg-gray-700">
                   Add Product
                 </Link>
-                <Link
-                  to="/ViewProducts"
-                  className="block py-2 px-3 rounded-lg hover:bg-gray-700"
-                >
+                <Link to="/ViewProducts" className="block py-2 px-3 rounded-lg hover:bg-gray-700">
                   View Products
                 </Link>
               </div>
@@ -105,9 +138,7 @@ export default function AddProduct() {
           ☰ Menu
         </button>
 
-        <h1 className="text-2xl font-bold mb-6 text-blue-400">
-          Add New Product
-        </h1>
+        <h1 className="text-2xl font-bold mb-6 text-blue-400">Add New Product</h1>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <input
@@ -142,18 +173,15 @@ export default function AddProduct() {
             <option>T-Shirts</option>
             <option>Trouser</option>
           </select>
-          {/* Image URL or Upload */}
-          {/* Image URL or Upload */}
+
           <div className="flex flex-col gap-2">
             <input
               type="text"
               value={image}
               onChange={(e) => setImage(e.target.value)}
               className="w-full h-10 bg-gray-800 border border-gray-700 rounded-lg px-3"
-              placeholder="Image URL (or click upload)"
+              placeholder="Image URL"
             />
-
-            {/* Hidden file input */}
             <input
               type="file"
               accept="image/*"
@@ -163,12 +191,10 @@ export default function AddProduct() {
                 const file = e.target.files[0];
                 if (!file) return;
                 const reader = new FileReader();
-                reader.onload = () => setImage(reader.result); // Base64 string
+                reader.onload = () => setImage(reader.result);
                 reader.readAsDataURL(file);
               }}
             />
-
-            {/* Styled button to trigger file input */}
             <button
               type="button"
               onClick={() => document.getElementById("productImageUpload").click()}
@@ -176,8 +202,6 @@ export default function AddProduct() {
             >
               📁 Upload Image
             </button>
-
-            {/* Preview if an image is selected */}
             {image && (
               <img
                 src={image}
@@ -186,7 +210,6 @@ export default function AddProduct() {
               />
             )}
           </div>
-
 
           <textarea
             value={description}
@@ -197,7 +220,6 @@ export default function AddProduct() {
             required
           ></textarea>
 
-          {/* Rating Input with 0.5 steps */}
           <div className="flex items-center gap-3">
             <label className="text-gray-200">Rating (0.5-5):</label>
             <input
@@ -213,7 +235,7 @@ export default function AddProduct() {
               placeholder="0.5"
               min="0.5"
               max="5"
-              step="0.5" // ✅ allows 0.5 increments
+              step="0.5"
               required
             />
           </div>
@@ -226,49 +248,74 @@ export default function AddProduct() {
           </button>
         </form>
 
+        {/* Marquee Section */}
         <div className="mt-6 space-y-4">
-          {/* Marquee Text */}
           <div>
             <label className="block font-semibold mb-1">Marquee Text</label>
             <input
               type="text"
-              value={marqueeText || ""}
+              value={marqueeText}
               onChange={(e) => setMarqueeText(e.target.value)}
               placeholder="Enter marquee text"
-              className="w-full p-2 border rounded"
+              className="w-full p-2 border rounded bg-gray-800 text-white"
             />
           </div>
 
-          {/* Marquee Color */}
-          <div>
-            <label className="block font-semibold mb-1">Marquee Color</label>
-            <input
-              type="color"
-              value={marqueeColor || "#ffffff"}
-              onChange={(e) => setMarqueeColor(e.target.value)}
-              className="w-16 h-10 p-0 border-none rounded"
-            />
+          <div className="flex gap-4">
+            <div>
+              <label className="block font-semibold mb-1">Text Color</label>
+              <input
+                type="color"
+                value={marqueeColor}
+                onChange={(e) => setMarqueeColor(e.target.value)}
+                className="w-16 h-10 p-0 border-none rounded"
+              />
+            </div>
+
+            <div>
+              <label className="block font-semibold mb-1">Background Color</label>
+              <input
+                type="color"
+                value={marqueeBgColor}
+                onChange={(e) => setMarqueeBgColor(e.target.value)}
+                className="w-16 h-10 p-0 border-none rounded"
+              />
+            </div>
           </div>
 
-          {/* Save Button */}
-          <div>
-            <button
-              onClick={() => {
-                localStorage.setItem(
-                  "storeMarquee",
-                  JSON.stringify({ text: marqueeText, color: marqueeColor })
-                );
-                alert("Marquee updated!");
-              }}
-              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+          <button
+            onClick={saveMarquee}
+            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+          >
+            Save Marquee
+          </button>
+
+          {/* Live Preview */}
+          {marqueeText && (
+            <div
+              className="mt-4 overflow-hidden border rounded"
+              style={{ backgroundColor: marqueeBgColor }}
             >
-              Save
-            </button>
-          </div>
+              <marquee style={{ color: marqueeColor, padding: "10px" }}>
+                {marqueeText}
+              </marquee>
+            </div>
+          )}
         </div>
 
+        {/* Toast */}
+        {toast.show && (
+          <div
+            className={`fixed top-5 right-5 z-50 px-6 py-3 rounded-xl shadow-lg text-white backdrop-blur-md bg-gradient-to-r ${
+              toast.type === "success"
+                ? "from-green-400 to-green-600"
+                : "from-red-400 to-red-600"
+            } transform transition duration-300`}
+          >
+            {toast.message}
+          </div>
+        )}
       </main>
-
     </div>
   );
 }

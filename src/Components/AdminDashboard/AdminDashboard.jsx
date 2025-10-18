@@ -13,26 +13,20 @@ export default function AdminDashboard() {
     totalCustomers: 0,
   });
 
-  // Reviews state
   const [reviews, setReviews] = useState([]);
 
-  // Sidebar toggle state
-  const [menus, setMenus] = useState({
-    productsMenu: false,
-    ordersMenu: false,
-    adminMenu: false,
-    bankMenu: false,
-    adminsList: false,
-    usersList: false,
-    profileMenu: false,
-    reviewsMenu: false,
-  });
-
+  const [menus, setMenus] = useState({});
   const [profilePic, setProfilePic] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const sidebarRef = useRef(null);
 
-  // Close sidebar when clicking outside (mobile)
+  // Toast state
+  const [toast, setToast] = useState({ show: false, message: "", type: "success" });
+  const showToast = (message, type = "success") => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast({ show: false, message: "", type }), 3000);
+  };
+
   useEffect(() => {
     function handleClickOutside(event) {
       if (sidebarOpen && sidebarRef.current && !sidebarRef.current.contains(event.target)) {
@@ -43,17 +37,11 @@ export default function AdminDashboard() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [sidebarOpen]);
 
-  const toggleMenu = (id) => {
-    setMenus((prev) => ({ ...prev, [id]: !prev[id] }));
-  };
+  const toggleMenu = (id) => setMenus((prev) => ({ ...prev, [id]: !prev[id] }));
 
-  // Load admin, stats & reviews on mount
   useEffect(() => {
     const admin = JSON.parse(localStorage.getItem("currentAdmin"));
-    if (!admin) {
-      navigate("/AdminLogin");
-      return;
-    }
+    if (!admin) return navigate("/AdminLogin");
     setCurrentAdmin(admin);
 
     const storedAdmins = JSON.parse(localStorage.getItem("admins")) || [];
@@ -71,106 +59,81 @@ export default function AdminDashboard() {
       totalCustomers: storedUsers.length,
     });
 
-    // Load reviews safely from both keys
     const shopsReviews = JSON.parse(localStorage.getItem("shopsReviews") || "[]");
-    let productReviewsRaw = JSON.parse(localStorage.getItem("productReviews") || "{}"); // use {} as default
-
-    // If it's an object (keyed by product), flatten the arrays into a single array
+    let productReviewsRaw = JSON.parse(localStorage.getItem("productReviews") || "{}");
     const productReviews = Array.isArray(productReviewsRaw)
       ? productReviewsRaw
       : Object.values(productReviewsRaw).flat();
 
-    const allReviews = [...shopsReviews, ...productReviews].reverse(); // newest first
+    const allReviews = [...shopsReviews, ...productReviews].reverse();
     setReviews(allReviews);
-
   }, [navigate]);
 
-  // Logout
   const handleLogout = () => {
     localStorage.removeItem("currentAdmin");
     navigate("/AdminLogin");
   };
 
-  // Save Bank Info (Super Admin only)
   const handleSaveBank = () => {
     const bankName = document.getElementById("bankName").value.trim();
     const accountName = document.getElementById("accountName").value.trim();
     const accountNumber = document.getElementById("accountNumber").value.trim();
-    if (!bankName || !accountName || !accountNumber) {
-      alert("Fill all fields");
-      return;
-    }
+    if (!bankName || !accountName || !accountNumber) return showToast("Fill all fields", "error");
+
     localStorage.setItem("superAdminBank", JSON.stringify({ bankName, accountName, accountNumber }));
-    alert("Bank info saved!");
+    showToast("Bank info saved!", "success");
   };
 
-  // Create Admin
   const handleCreateAdmin = () => {
     const id = document.getElementById("newAdminId").value.trim();
     const email = document.getElementById("newAdminEmail").value.trim();
     const password = document.getElementById("newAdminPassword").value.trim();
     const confirmPassword = document.getElementById("confirmNewAdminPassword").value.trim();
-    if (!id || !email || !password) {
-      alert("Fill all fields");
-      return;
-    }
-    if (password !== confirmPassword) {
-      alert("Passwords do not match!");
-      return;
-    }
-    let admins = JSON.parse(localStorage.getItem("admins")) || [];
-    if (admins.find((a) => a.id === id || a.email === email)) {
-      alert("Admin exists");
-      return;
-    }
-    admins.push({ id, email, password, role: "admin" });
-    localStorage.setItem("admins", JSON.stringify(admins));
-    setAdmins(admins);
-    alert("Admin created!");
+    if (!id || !email || !password) return showToast("Fill all fields", "error");
+    if (password !== confirmPassword) return showToast("Passwords do not match!", "error");
+
+    let adminsList = JSON.parse(localStorage.getItem("admins")) || [];
+    if (adminsList.find((a) => a.id === id || a.email === email)) return showToast("Admin exists", "error");
+
+    adminsList.push({ id, email, password, role: "admin" });
+    localStorage.setItem("admins", JSON.stringify(adminsList));
+    setAdmins(adminsList);
+    showToast("Admin created!", "success");
   };
 
-  // Create Super Admin
   const handleCreateSuperAdmin = () => {
     const id = document.getElementById("newSuperAdminId").value.trim();
     const email = document.getElementById("newSuperAdminEmail").value.trim();
     const password = document.getElementById("newSuperAdminPassword").value.trim();
     const confirmPassword = document.getElementById("confirmNewSuperAdminPassword").value.trim();
-    if (!id || !email || !password) {
-      alert("Fill all fields");
-      return;
-    }
-    if (password !== confirmPassword) {
-      alert("Passwords do not match!");
-      return;
-    }
-    let admins = JSON.parse(localStorage.getItem("admins")) || [];
-    if (admins.find((a) => a.id === id || a.email === email)) {
-      alert("Admin already exists");
-      return;
-    }
-    admins.push({ id, email, password, role: "superadmin" });
-    localStorage.setItem("admins", JSON.stringify(admins));
-    setAdmins(admins);
-    alert("Super Admin created!");
+    if (!id || !email || !password) return showToast("Fill all fields", "error");
+    if (password !== confirmPassword) return showToast("Passwords do not match!", "error");
+
+    let adminsList = JSON.parse(localStorage.getItem("admins")) || [];
+    if (adminsList.find((a) => a.id === id || a.email === email)) return showToast("Admin already exists", "error");
+
+    adminsList.push({ id, email, password, role: "superadmin" });
+    localStorage.setItem("admins", JSON.stringify(adminsList));
+    setAdmins(adminsList);
+    showToast("Super Admin created!", "success");
   };
 
-  // Delete Admin
   const handleDeleteAdmin = (index) => {
     let updated = [...admins];
     updated.splice(index, 1);
     localStorage.setItem("admins", JSON.stringify(updated));
     setAdmins(updated);
+    showToast("Admin deleted", "success");
   };
 
-  // Delete User
   const handleDeleteUser = (index) => {
     let updated = [...users];
     updated.splice(index, 1);
     localStorage.setItem("customers", JSON.stringify(updated));
     setUsers(updated);
+    showToast("User deleted", "success");
   };
 
-  // Handle profile pic upload only
   const handleProfilePicUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -179,57 +142,84 @@ export default function AdminDashboard() {
       setProfilePic(reader.result);
       let updatedAdmin = { ...currentAdmin, profilePic: reader.result };
       localStorage.setItem("currentAdmin", JSON.stringify(updatedAdmin));
-
       let updatedAdmins = admins.map((a) => (a.id === currentAdmin.id ? updatedAdmin : a));
       localStorage.setItem("admins", JSON.stringify(updatedAdmins));
       setAdmins(updatedAdmins);
       setCurrentAdmin(updatedAdmin);
+      showToast("Profile picture updated!", "success");
     };
     reader.readAsDataURL(file);
   };
 
-  // --- Reviews management helpers ---
+// --- State for confirm modal ---
+const [confirmModal, setConfirmModal] = useState({ show: false, action: null, message: "" });
 
-  // Save to localStorage (we keep underlying storage oldest->newest, so reverse before saving)
-  const persistReviewsToStorage = (list) => {
-    try {
-      // write under both keys to ensure compatibility with whichever you use
-      const oldestFirst = [...list].reverse(); // our list is newest-first
-      localStorage.setItem("shopsReviews", JSON.stringify(oldestFirst));
-      localStorage.setItem("productReviews", JSON.stringify(oldestFirst));
-    } catch (err) {
-      console.error("Failed saving reviews", err);
-    }
-  };
+// Call when user confirms the action
+const handleConfirm = () => {
+  if (confirmModal.action) confirmModal.action();
+  setConfirmModal({ show: false, action: null, message: "" });
+};
 
-  // FIXED: Only superadmin can delete reviews
-  const deleteReview = (index) => {
-    if (currentAdmin?.role !== "superadmin") {
-      alert("You don’t have permission to delete reviews. Please contact a Super Admin.");
-      return;
-    }
-    if (!window.confirm("Delete this review?")) return;
-    const newList = [...reviews];
-    newList.splice(index, 1);
-    setReviews(newList);
-    persistReviewsToStorage(newList);
-  };
+// Call when user cancels
+const handleCancelConfirm = () => {
+  setConfirmModal({ show: false, action: null, message: "" });
+};
 
-  const clearAllReviews = () => {
-    if (currentAdmin?.role !== "superadmin") {
-      alert("You don’t have permission to clear reviews. Please contact a Super Admin.");
-      return;
-    }
-    if (!window.confirm("Clear ALL reviews? This cannot be undone.")) return;
-    setReviews([]);
-    // remove keys
-    localStorage.removeItem("shopsReviews");
-    localStorage.removeItem("productReviews");
-  };
+// --- Persist reviews ---
+const persistReviewsToStorage = (list) => {
+  try {
+    const oldestFirst = [...list].reverse();
+    localStorage.setItem("shopsReviews", JSON.stringify(oldestFirst));
+    localStorage.setItem("productReviews", JSON.stringify(oldestFirst));
+  } catch (err) {
+    console.error("Failed saving reviews", err);
+    showToast("Failed saving reviews", "error");
+  }
+};
 
-  // Helper to show name/text safely (supports different review object shapes)
-  const reviewName = (r) => r?.name || r?.user || r?.username || r?.userName || "Anonymous";
-  const reviewText = (r) => r?.message || r?.text || r?.comment || r?.review || "";
+// --- Delete a single review ---
+const deleteReview = (index) => {
+  if (currentAdmin?.role !== "superadmin") {
+    return showToast("No permission to delete review", "error");
+  }
+
+  setConfirmModal({
+    show: true,
+    message: "Delete this review? This action cannot be undone.",
+    action: () => {
+      const newList = [...reviews];
+      newList.splice(index, 1);
+      setReviews(newList);
+      persistReviewsToStorage(newList);
+      showToast("Review deleted!", "success");
+    },
+  });
+};
+
+// --- Clear all reviews ---
+const clearAllReviews = () => {
+  if (currentAdmin?.role !== "superadmin") {
+    return showToast("No permission to clear reviews", "error");
+  }
+
+  setConfirmModal({
+    show: true,
+    message: "Clear ALL reviews? This cannot be undone.",
+    action: () => {
+      setReviews([]);
+      localStorage.removeItem("shopsReviews");
+      localStorage.removeItem("productReviews");
+      showToast("All reviews cleared!", "success");
+    },
+  });
+};
+
+// --- Helper functions ---
+const reviewName = (r) => r?.name || r?.user || r?.username || r?.userName || "Anonymous";
+const reviewText = (r) => r?.message || r?.text || r?.comment || r?.review || "";
+
+
+
 
 
   return (
@@ -430,9 +420,9 @@ export default function AdminDashboard() {
                           <button
                             onClick={() => {
                               const rate = document.getElementById("exchangeRate").value.trim();
-                              if (!rate) return alert("Enter a valid rate");
+                              if (!rate) return showToast("Enter a valid rate", "error");
                               localStorage.setItem("exchangeRate", JSON.stringify(Number(rate)));
-                              alert("Exchange rate saved!");
+                              showToast("Exchange rate saved!", "success");
                             }}
                             className="w-full py-2 bg-yellow-500 rounded hover:bg-yellow-600"
                           >
@@ -571,7 +561,7 @@ export default function AdminDashboard() {
                         if (currentAdmin?.role === "superadmin") {
                           deleteReview(i);
                         } else {
-                          alert("You don’t have permission to delete reviews. Please contact a Super Admin.");
+                          showToast("You don’t have permission to delete reviews. Please contact a Super Admin.", "error");
                         }
                       }}
                       className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600 text-xs"
@@ -585,6 +575,41 @@ export default function AdminDashboard() {
           )}
         </div>
       </main>
-    </div>
-  );
+    {/* Toast */}
+    {toast.show && (
+      <div
+        className={`fixed top-5 right-5 z-50 px-6 py-3 rounded-xl shadow-lg text-white backdrop-blur-md bg-gradient-to-r ${
+          toast.type === "success"
+            ? "from-green-400 to-green-600"
+            : "from-red-400 to-red-600"
+        } transform transition duration-300`}
+      >
+        {toast.message}
+      </div>
+    )}
+
+    {/* Confirm Modal */}
+    {confirmModal.show && (
+      <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
+        <div className="bg-gray-800 p-6 rounded shadow text-gray-100 w-80">
+          <p>{confirmModal.message}</p>
+          <div className="mt-4 flex justify-end gap-2">
+            <button
+              onClick={handleCancelConfirm}
+              className="px-4 py-2 bg-gray-500 rounded hover:bg-gray-600"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleConfirm}
+              className="px-4 py-2 bg-red-600 rounded hover:bg-red-700"
+            >
+              Confirm
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+  </div>
+);
 }

@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import Toastify from "toastify-js";
 import "toastify-js/src/toastify.css";
 import { MdStar, MdStarBorder, MdStarHalf } from "react-icons/md";
+import Marquee from "../Marquee/Marquee.jsx";
 import MenuImg from "../../assets/world_unsplash.com.jpeg";
 
 // Star Rating component
@@ -27,7 +28,9 @@ export default function Store() {
   const [bankDetails, setBankDetails] = useState("Loading...");
   const [exchangeRate, setExchangeRate] = useState(50);
   const [productPage, setProductPage] = useState(1);
-const productsPerPage = 20; 
+  const productsPerPage = 20;
+  const [loading, setLoading] = useState(true);
+
 
 
   const [expandedProduct, setExpandedProduct] = useState(null);
@@ -56,12 +59,16 @@ const productsPerPage = 20;
   // Load initial data
   useEffect(() => {
     const customer = JSON.parse(localStorage.getItem("currentCustomer"));
+
     if (!customer) {
-      alert("Please login first!");
-      navigate("/");
+      // don't redirect yet — just stop loading
+      setLoading(false);
       return;
     }
+
     setCurrentCustomer(customer);
+
+    // your other loading logic continues normally...
 
     const productsList = JSON.parse(localStorage.getItem("shopsProducts")) || [];
     setProducts(productsList);
@@ -80,11 +87,9 @@ const productsPerPage = 20;
     const savedRate = JSON.parse(localStorage.getItem("exchangeRate"));
     if (savedRate) setExchangeRate(savedRate);
 
-    // Normalize productReviews from localStorage into object keyed by product name
     const savedReviewsRaw = JSON.parse(localStorage.getItem("productReviews")) || {};
     const savedReviewsObj = {};
 
-    // If it's an array of reviews
     if (Array.isArray(savedReviewsRaw)) {
       savedReviewsRaw.forEach(r => {
         const product = r.product || "Unknown";
@@ -97,7 +102,6 @@ const productsPerPage = 20;
         });
       });
     } else {
-      // If it's already an object keyed by product
       Object.keys(savedReviewsRaw).forEach(product => {
         savedReviewsObj[product] = savedReviewsRaw[product].map(r => ({
           name: r.name || r.user || "Anonymous",
@@ -108,12 +112,8 @@ const productsPerPage = 20;
       });
     }
 
-    // Save normalized version back to localStorage so both admin & store see the same format
     localStorage.setItem("productReviews", JSON.stringify(savedReviewsObj));
-
     setReviews(savedReviewsObj);
-
-
 
     const savedDrafts = JSON.parse(localStorage.getItem("reviewDrafts")) || {};
     setProductDrafts(savedDrafts);
@@ -123,7 +123,10 @@ const productsPerPage = 20;
       activeUsers.push({ name: customer.name, email: customer.email, picture: customer.picture });
       localStorage.setItem("activeUsers", JSON.stringify(activeUsers));
     }
+
+    setLoading(false);
   }, [navigate]);
+
 
   // Click outside handlers
   useEffect(() => {
@@ -144,7 +147,14 @@ const productsPerPage = 20;
     localStorage.removeItem("reviewDrafts");
     setProductDrafts({});
     setCurrentCustomer(null);
-    alert("Logged out successfully!");
+    Toastify({
+      text: "Logged out successfully ✅",
+      duration: 3000,
+      gravity: "top",
+      position: "right",
+      close: true,
+      backgroundColor: "linear-gradient(to right, #ef4444, #dc2626)",
+    }).showToast();
     navigate("/");
   };
 
@@ -201,7 +211,15 @@ const productsPerPage = 20;
     localStorage.setItem("productReviews", JSON.stringify(updatedAll));
     setReviews(updatedAll);
     clearDraft(productName);
-    alert("Review submitted — thank you!");
+    Toastify({
+      text: "Review submitted — thank you! ✅",
+      duration: 3000,
+      gravity: "top",
+      position: "right",
+      close: true,
+      backgroundColor: "linear-gradient(to right, #22c55e, #16a34a)",
+    }).showToast();
+
   };
 
   const handleCategoryChange = (e) => {
@@ -238,6 +256,13 @@ const productsPerPage = 20;
   });
 
   const basketCount = basketItems.reduce((total, item) => total + item.quantity, 0);
+
+  if (loading) return <div>Loading...</div>;
+  if (!currentCustomer) {
+    navigate("/");
+    return null;
+  }
+
 
   return (
     <div className="bg-gray-50 min-h-screen relative">
@@ -520,8 +545,11 @@ const productsPerPage = 20;
             {basketCount}
           </span>
         </button>
+
       )}
+      <Marquee />
     </div>
+
   );
 }
 

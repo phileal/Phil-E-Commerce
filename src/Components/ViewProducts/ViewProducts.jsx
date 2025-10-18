@@ -10,6 +10,16 @@ export default function Products() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const sidebarRef = useRef(null);
 
+  // ✅ toast state
+  const [toast, setToast] = useState({ show: false, message: "", type: "success" });
+  // ✅ confirm state
+  const [confirmModal, setConfirmModal] = useState({ show: false, index: null });
+
+  const showToast = (message, type = "success") => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast({ show: false, message: "", type: "success" }), 3000);
+  };
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
@@ -48,10 +58,23 @@ export default function Products() {
     setProducts(updated);
   };
 
-  const deleteProduct = (index) => {
+  // ✅ open confirm before deleting
+  const requestDeleteProduct = (index) => {
+    setConfirmModal({ show: true, index });
+  };
+
+  const handleConfirmDelete = () => {
+    const index = confirmModal.index;
     const updated = [...products];
     updated.splice(index, 1);
     saveProducts(updated);
+    setConfirmModal({ show: false, index: null });
+
+    showToast("Product deleted successfully.", "success");
+  };
+
+  const handleCancelDelete = () => {
+    setConfirmModal({ show: false, index: null });
   };
 
   const openEdit = (index) => {
@@ -105,16 +128,50 @@ export default function Products() {
     };
     saveProducts(updated);
     closeModal();
+    showToast("Product updated successfully", "success");
   };
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen bg-gray-900 text-gray-200">
+
+      {/* ✅ Toast */}
+      {toast.show && (
+        <div
+          className={`fixed top-5 right-5 z-50 px-6 py-3 rounded-xl shadow-lg text-white backdrop-blur-md bg-gradient-to-r ${toast.type === "success" ? "from-green-400 to-green-600" : "from-red-400 to-red-600"
+            }`}
+        >
+          {toast.message}
+        </div>
+      )}
+
+           {/* ✅ Confirm Modal */}
+      {confirmModal.show && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
+          <div className="bg-gray-800 p-6 rounded shadow text-gray-100 w-80">
+            <p>Are you sure you want to delete this product?</p>
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                onClick={handleCancelDelete}
+                className="px-4 py-2 bg-gray-500 rounded hover:bg-gray-600"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                className="px-4 py-2 bg-red-600 rounded hover:bg-red-700"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Sidebar */}
       <aside
         ref={sidebarRef}
-        className={`fixed md:static z-20 inset-y-0 left-0 transform ${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        } md:translate-x-0 transition-transform duration-300 ease-in-out w-60 bg-gray-800 p-6`}
+        className={`fixed md:static z-20 inset-y-0 left-0 transform ${sidebarOpen ? "translate-x-0" : "-translate-x-full"
+          } md:translate-x-0 transition-transform duration-300 ease-in-out w-60 bg-gray-800 p-6`}
       >
         <h2 className="text-xl font-bold text-blue-400 mb-6">Admin Panel</h2>
         <nav className="space-y-2">
@@ -184,9 +241,10 @@ export default function Products() {
                       <button className="text-blue-400 underline mr-2" onClick={() => openEdit(index)}>
                         Edit
                       </button>
-                      <button className="text-red-400 underline" onClick={() => deleteProduct(index)}>
+                      <button className="text-red-400 underline" onClick={() => requestDeleteProduct(index)}>
                         Delete
                       </button>
+
                     </td>
                   </tr>
                 ))

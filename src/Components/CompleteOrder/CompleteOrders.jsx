@@ -7,12 +7,22 @@ export default function CompletedOrders() {
   const [ordersMenuOpen, setOrdersMenuOpen] = useState(true);
   const sidebarRef = useRef(null);
 
+  // ✅ toast state
+  const [toast, setToast] = useState({ show: false, message: "", type: "success" });
+
+  const showToast = (message, type = "success") => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast({ show: false, message: "", type: "success" }), 3000);
+  };
+
+  // ✅ confirm modal state
+  const [confirmModal, setConfirmModal] = useState({ show: false, type: "", index: null });
+
   useEffect(() => {
     const storedCompleted = JSON.parse(localStorage.getItem("completedOrders")) || [];
     setCompletedOrders(storedCompleted);
   }, []);
 
-  // Close sidebar if clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
@@ -29,21 +39,33 @@ export default function CompletedOrders() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [sidebarOpen]);
 
-  const deleteCompleted = (index) => {
-    const updated = [...completedOrders];
-    updated.splice(index, 1);
-    localStorage.setItem("completedOrders", JSON.stringify(updated));
-    setCompletedOrders(updated);
+  const requestDeleteSingle = (index) => {
+    setConfirmModal({ show: true, type: "single", index });
   };
 
-  const clearAllCompleted = () => {
-    if (window.confirm("Are you sure you want to clear all completed orders?")) {
+  const requestClearAll = () => {
+    setConfirmModal({ show: true, type: "all", index: null });
+  };
+
+  const handleConfirm = () => {
+    if (confirmModal.type === "single") {
+      const updated = [...completedOrders];
+      updated.splice(confirmModal.index, 1);
+      localStorage.setItem("completedOrders", JSON.stringify(updated));
+      setCompletedOrders(updated);
+      showToast("Order deleted successfully.", "success");
+    } else {
       localStorage.removeItem("completedOrders");
       setCompletedOrders([]);
+      showToast("All completed orders cleared.", "success");
     }
+    setConfirmModal({ show: false, type: "", index: null });
   };
 
-  // Calculate total revenue
+  const handleCancel = () => {
+    setConfirmModal({ show: false, type: "", index: null });
+  };
+
   const totalRevenue = completedOrders.reduce((total, order) => {
     if (order.cart && order.cart.length > 0) {
       order.cart.forEach(item => total += item.price * item.quantity);
@@ -55,6 +77,18 @@ export default function CompletedOrders() {
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen bg-gray-900 text-gray-200">
+
+      {/* ✅ Toast */}
+      {toast.show && (
+        <div
+          className={`fixed top-5 right-5 z-50 px-6 py-3 rounded-xl shadow-lg text-white backdrop-blur-md bg-gradient-to-r ${
+            toast.type === "success" ? "from-green-400 to-green-600" : "from-red-400 to-red-600"
+          }`}
+        >
+          {toast.message}
+        </div>
+      )}
+
       {/* Sidebar */}
       <aside
         ref={sidebarRef}
@@ -71,7 +105,7 @@ export default function CompletedOrders() {
             Dashboard
           </Link>
 
-          {/* Orders Menu */}
+          {/* Orders */}
           <div>
             <button
               onClick={() => setOrdersMenuOpen(!ordersMenuOpen)}
@@ -81,16 +115,10 @@ export default function CompletedOrders() {
             </button>
             {ordersMenuOpen && (
               <div className="space-y-1 pl-4 mt-1">
-                <Link
-                  to="/PendingOrders"
-                  className="block py-2 px-3 rounded-lg hover:bg-gray-700"
-                >
+                <Link to="/PendingOrders" className="block py-2 px-3 rounded-lg hover:bg-gray-700">
                   Pending Orders
                 </Link>
-                <Link
-                  to="/CompleteOrders"
-                  className="block py-2 px-3 rounded-lg bg-gray-700"
-                >
+                <Link to="/CompleteOrders" className="block py-2 px-3 rounded-lg bg-gray-700">
                   Completed Orders
                 </Link>
               </div>
@@ -101,7 +129,6 @@ export default function CompletedOrders() {
 
       {/* Main */}
       <main className="flex-1 p-6 md:ml-0 ml-0">
-        {/* Hamburger */}
         <button
           id="menuButton"
           onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -112,10 +139,7 @@ export default function CompletedOrders() {
 
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold text-blue-400">Completed Orders</h1>
-          <button
-            onClick={clearAllCompleted}
-            className="bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg text-white text-sm"
-          >
+          <button onClick={requestClearAll} className="bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg text-white text-sm">
             Clear All
           </button>
         </div>
@@ -136,18 +160,13 @@ export default function CompletedOrders() {
                     ? order.cart.map((item, idx) => (
                         <li key={idx}>{item.name} × {item.quantity} • ${item.price * item.quantity}</li>
                       ))
-                    : order.name
-                    ? <li>{order.name} × {order.quantity} • ${order.price * order.quantity}</li>
-                    : <li>No items found</li>}
+                    : <li>{order.name} × {order.quantity} • ${order.price * order.quantity}</li>}
                 </ul>
                 <p className="text-xs text-gray-400 mt-2">Completed at: {order.time || "Unknown time"}</p>
                 <p className="text-sm text-gray-300">Delivery Address: {order.deliveryAddress || "No address provided"}</p>
               </div>
               <div className="mt-3">
-                <button
-                  className="text-red-400 underline"
-                  onClick={() => deleteCompleted(index)}
-                >
+                <button className="text-red-400 underline" onClick={() => requestDeleteSingle(index)}>
                   Delete
                 </button>
               </div>
@@ -155,6 +174,28 @@ export default function CompletedOrders() {
           ))}
         </div>
       </main>
+
+      {/* ✅ Confirm Modal */}
+      {confirmModal.show && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="bg-gray-800 p-6 rounded-lg shadow-lg w-80">
+            <p className="text-lg font-bold text-gray-100 mb-4">Confirm Action</p>
+            <p className="text-gray-300 mb-6">
+              {confirmModal.type === "single"
+                ? "Are you sure you want to delete this order?"
+                : "Are you sure you want to clear ALL completed orders?"}
+            </p>
+            <div className="flex justify-between">
+              <button onClick={handleCancel} className="px-4 py-2 bg-gray-600 rounded hover:bg-gray-500">
+                Cancel
+              </button>
+              <button onClick={handleConfirm} className="px-4 py-2 bg-red-600 rounded hover:bg-red-500">
+                Yes, Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

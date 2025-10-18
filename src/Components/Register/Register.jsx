@@ -9,18 +9,27 @@ export default function Register() {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
 
+  // ✅ Toast state
+  const [toast, setToast] = useState({ show: false, message: "", type: "success" });
+
+  // ✅ helper to show toast
+  const showToast = (message, type = "success") => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast({ show: false, message: "", type: "success" }), 3000);
+  };
+
   const handleRegister = (e) => {
     e.preventDefault();
 
     if (password !== confirm) {
-      alert("Passwords do not match!");
+      showToast("Passwords do not match!", "error");
       return;
     }
 
     let customers = JSON.parse(localStorage.getItem("customers")) || [];
 
     if (customers.find((c) => c.email === email)) {
-      alert("This email is already registered.");
+      showToast("This email is already registered.", "error");
       return;
     }
 
@@ -28,12 +37,27 @@ export default function Register() {
     customers.push(newCustomer);
     localStorage.setItem("customers", JSON.stringify(customers));
 
-    alert("Account created successfully! You can now login.");
-    navigate("/");
+    showToast("Account created successfully! You can now login.", "success");
+
+    setTimeout(() => navigate("/"), 3000);
   };
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen">
+
+      {/* ✅ Toast UI */}
+      {toast.show && (
+        <div
+          className={`fixed top-5 right-5 z-50 px-6 py-3 rounded-xl shadow-lg text-white backdrop-blur-md bg-gradient-to-r ${
+            toast.type === "success"
+              ? "from-green-400 to-green-600"
+              : "from-red-400 to-red-600"
+          }`}
+        >
+          {toast.message}
+        </div>
+      )}
+
       {/* Left Image Panel */}
       <div
         className="md:w-1/2 h-64 md:h-auto bg-cover bg-center"

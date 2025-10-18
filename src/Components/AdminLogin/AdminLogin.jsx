@@ -14,10 +14,14 @@ export default function AdminLogin() {
 
   const navigate = useNavigate();
 
-  // Load admins from localStorage
+  const [toast, setToast] = useState({ show: false, message: "", type: "success" });
+  const showToast = (message, type = "success") => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast({ show: false, message: "", type }), 3000);
+  };
+
   const admins = JSON.parse(localStorage.getItem("admins")) || [];
 
-  // ✅ Super Admin credentials (from Vite .env file)
   const superAdmin = {
     id: import.meta.env.VITE_SUPERADMIN_ID,
     email: import.meta.env.VITE_SUPERADMIN_EMAIL,
@@ -28,39 +32,39 @@ export default function AdminLogin() {
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    // ✅ Super Admin login
-    if (
-      adminId === superAdmin.id &&
-      adminEmail === superAdmin.email &&
-      adminPassword === superAdmin.password
-    ) {
-      localStorage.setItem("currentAdmin", JSON.stringify(superAdmin));
-      alert("Super Admin login successful!");
-      navigate("/AdminDashboard");
-      return;
-    }
+if (
+  adminId === superAdmin.id &&
+  adminEmail === superAdmin.email &&
+  adminPassword === superAdmin.password
+) {
+  localStorage.setItem("currentAdmin", JSON.stringify(superAdmin));
+  showToast("Super Admin login successful!", "success");
 
-    // ✅ Normal Admin login
-    const found = admins.find(
-      (a) =>
-        a.id === adminId &&
-        a.email === adminEmail &&
-        a.password === adminPassword
-    );
+  // Wait 3 seconds, then navigate
+  setTimeout(() => navigate("/AdminDashboard"), 3000);
+  return;
+}
 
-    if (found) {
-      localStorage.setItem(
-        "currentAdmin",
-        JSON.stringify({ ...found, role: "admin" })
-      );
-      alert("Admin login successful!");
-      navigate("/AdminDashboard");
-    } else {
-      alert("Invalid ID, email, or password!");
-    }
+const found = admins.find(
+  (a) =>
+    a.id === adminId &&
+    a.email === adminEmail &&
+    a.password === adminPassword
+);
+
+if (found) {
+  localStorage.setItem(
+    "currentAdmin",
+    JSON.stringify({ ...found, role: "admin" })
+  );
+  showToast("Admin login successful!", "success");
+
+  setTimeout(() => navigate("/AdminDashboard"), 2000);
+} else {
+  showToast("Invalid ID, email, or password!", "error");
+}
   };
 
-  // --- Forgot Password Handlers ---
   const handleSendCode = async () => {
     try {
       const res = await fetch("http://localhost:5000/forgot-password", {
@@ -70,13 +74,13 @@ export default function AdminLogin() {
       });
       const data = await res.json();
       if (res.ok) {
-        alert(data.message);
+        showToast(data.message, "success");
         setStep(2);
       } else {
-        alert(data.error);
+        showToast(data.error || "Failed to send code", "error");
       }
     } catch (err) {
-      alert("Error sending reset code");
+      showToast("Error sending reset code", "error");
       console.error(err);
     }
   };
@@ -90,25 +94,23 @@ export default function AdminLogin() {
       });
       const data = await res.json();
       if (res.ok) {
-        alert(data.message);
+        showToast(data.message, "success");
         setStep(3);
       } else {
-        alert(data.error);
+        showToast(data.error || "Invalid code", "error");
       }
     } catch (err) {
-      alert("Error verifying code");
+      showToast("Error verifying code", "error");
       console.error(err);
     }
   };
 
   const handleResetPassword = () => {
-    // Since backend doesn’t yet handle saving new password,
-    // we’ll update it in localStorage (admins array).
     let updatedAdmins = admins.map((a) =>
       a.email === resetEmail ? { ...a, password: newPassword } : a
     );
     localStorage.setItem("admins", JSON.stringify(updatedAdmins));
-    alert("Password reset successful! You can now log in.");
+    showToast("Password reset successful! You can now log in.", "success");
     setShowForgot(false);
     setStep(1);
     setResetEmail("");
@@ -121,7 +123,6 @@ export default function AdminLogin() {
       className="flex items-center justify-center min-h-screen bg-cover bg-center"
       style={{ backgroundImage: `url(${adminImg})` }}
     >
-      {/* ✅ Transparent login box with responsive styles */}
       <div className="relative bg-opacity-60 backdrop-blur-md p-8 sm:p-10 rounded-3xl w-full max-w-md text-gray-200 shadow-2xl z-10 transform transition duration-300 hover:scale-105">
         <h2 className="text-3xl sm:text-4xl font-extrabold mb-8 text-blue-400 text-center">
           Admin Login
@@ -160,7 +161,6 @@ export default function AdminLogin() {
           </button>
         </form>
 
-        {/* ✅ Forgot Password Link */}
         <p
           onClick={() => setShowForgot(true)}
           className="mt-4 text-blue-300 text-center cursor-pointer hover:underline"
@@ -168,7 +168,6 @@ export default function AdminLogin() {
           Forgot Password?
         </p>
 
-        {/* ✅ Go Back Home Button */}
         <Link
           to="/"
           className="block mt-6 text-center w-full p-4 bg-gray-700 bg-opacity-70 hover:bg-gray-600 rounded-xl font-bold text-lg text-gray-200 transition"
@@ -177,7 +176,6 @@ export default function AdminLogin() {
         </Link>
       </div>
 
-      {/* ✅ Forgot Password Modal */}
       {showForgot && (
         <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
           <div className="bg-gray-800 p-6 rounded-2xl w-full max-w-sm text-gray-200">
@@ -248,6 +246,19 @@ export default function AdminLogin() {
               Cancel
             </button>
           </div>
+        </div>
+      )}
+
+      {/* ✅ Toast */}
+      {toast.show && (
+        <div
+          className={`fixed top-5 right-5 z-50 px-6 py-3 rounded-xl shadow-lg text-white backdrop-blur-md bg-gradient-to-r ${
+            toast.type === "success"
+              ? "from-green-400 to-green-600"
+              : "from-red-400 to-red-600"
+          } transform transition duration-300`}
+        >
+          {toast.message}
         </div>
       )}
     </div>

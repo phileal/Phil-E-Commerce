@@ -1,5 +1,5 @@
 import { Link, Routes, Route, useNavigate, useLocation } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import "./App.css";
 import "./index.css";
 import AdminLogin from "./Components/AdminLogin/AdminLogin.jsx";
@@ -30,18 +30,24 @@ function GlobalNetworkAndLoader({ children }) {
 
   // First load
   useEffect(() => {
-    const timer = setTimeout(() => setFirstLoad(false), 3000);
+    const timer = setTimeout(() => setFirstLoad(false), 2000);
     return () => clearTimeout(timer);
   }, []);
 
   // Route change loader
+  // Route change loader (skip first mount)
+  const firstRouteChange = useRef(true);
   useEffect(() => {
-    if (!firstLoad) {
-      setRouteLoading(true);
-      const timer = setTimeout(() => setRouteLoading(false), 2000);
-      return () => clearTimeout(timer);
+    if (firstRouteChange.current) {
+      firstRouteChange.current = false;
+      return; // ✅ skip first route change (first load)
     }
-  }, [location, firstLoad]);
+
+    setRouteLoading(true);
+    const timer = setTimeout(() => setRouteLoading(false), 2000);
+    return () => clearTimeout(timer);
+  }, [location]);
+
 
   // Handle online/offline
   useEffect(() => {
@@ -74,7 +80,7 @@ function GlobalNetworkAndLoader({ children }) {
   if (firstLoad) {
     return (
       <div className="flex items-center justify-center h-screen bg-white">
-        <img src="src/assets/45.svg" alt="Loading..." className="w-14 h-14 animate-spin" />
+        <img src="/45.svg" alt="Loading..." className="w-14 h-14 animate-spin" />
       </div>
     );
   }
@@ -92,15 +98,13 @@ function GlobalNetworkAndLoader({ children }) {
   return (
     <>
       {/* Overlay loader */}
-      {(firstLoad || routeLoading) && (
+      {!firstLoad && routeLoading && (
         <div className="fixed inset-0 flex items-center justify-center bg-white z-[9999]">
-          <img
-            src="src/assets/45.svg"
-            alt="Loading..."
-            className="w-14 h-14 animate-spin"
-          />
+          <img src="/45.svg" alt="Loading..." className="w-14 h-14 animate-spin" />
         </div>
       )}
+
+
 
       {/* Network Toast */}
       {showNetworkBar && (
@@ -171,11 +175,10 @@ export default function App() {
     <div className="bg-gray-900 min-h-screen">
 
       {toast.show && (
-        <div className={`fixed top-5 right-5 z-50 px-6 py-3 rounded-xl shadow-lg text-white backdrop-blur-md bg-gradient-to-r ${
-          toast.type === "success"
-            ? "from-green-400 to-green-600"
-            : "from-red-400 to-red-600"
-        }`}>
+        <div className={`fixed top-5 right-5 z-50 px-6 py-3 rounded-xl shadow-lg text-white backdrop-blur-md bg-gradient-to-r ${toast.type === "success"
+          ? "from-green-400 to-green-600"
+          : "from-red-400 to-red-600"
+          }`}>
           {toast.message}
         </div>
       )}

@@ -16,6 +16,8 @@ import CustomerReviews from "./Components/CustomerReviews/CustomerReviews.jsx";
 import ProtectedRoute from "./Components/ProtectedRoute.jsx";
 import AdminProtectedRoute from "./Components/AdminProtectedRoute.jsx";
 import customerImg from "./assets/perfect customer istockphoto.com.jpeg";
+import loading from "./assets/45.svg"
+
 
 
 // ✅ GLOBAL LOADER + NETWORK STATUS + ROUTE LOADER
@@ -80,7 +82,7 @@ function GlobalNetworkAndLoader({ children }) {
   if (firstLoad) {
     return (
       <div className="flex items-center justify-center h-screen bg-white">
-        <img src="/45.svg" alt="Loading..." className="w-14 h-14 animate-spin" />
+        <img src={loading} alt="Loading..." className="w-14 h-14 animate-spin" />
       </div>
     );
   }
@@ -100,7 +102,7 @@ function GlobalNetworkAndLoader({ children }) {
       {/* Overlay loader */}
       {!firstLoad && routeLoading && (
         <div className="fixed inset-0 flex items-center justify-center bg-white z-[9999]">
-          <img src="/45.svg" alt="Loading..." className="w-14 h-14 animate-spin" />
+          <img src={loading} alt="Loading..." className="w-14 h-14 animate-spin" />
         </div>
       )}
 

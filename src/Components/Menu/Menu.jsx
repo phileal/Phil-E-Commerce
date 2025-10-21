@@ -271,8 +271,16 @@ export default function Store() {
         <button onClick={toggleMenu} className="absolute top-4 left-4 text-3xl font-bold bg-black bg-opacity-40 px-3 py-1 rounded-lg z-40">☰</button>
         <button onClick={handleLogout} className="absolute top-4 right-4 bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg font-bold z-40">Logout</button>
         <div className="bg-black bg-opacity-40 p-6 md:p-12 rounded-xl inline-block">
-          <h1 className="text-3xl md:text-5xl font-bold">Welcome to Our Store</h1>
-          <p className="mt-2 text-lg md:text-xl italic">
+          <h1
+            className="text-3xl md:text-5xl font-bold"
+            style={{ fontFamily: "'Playfair Display', serif" }}
+          >
+            Welcome to Our Store
+          </h1>
+
+          <p className="mt-2 text-lg md:text-xl"
+            style={{ fontFamily: "'Playfair Display', serif" }}
+          >
             Hello <span className="font-semibold">{currentCustomer?.name}</span>, find your best products here!
           </p>
         </div>

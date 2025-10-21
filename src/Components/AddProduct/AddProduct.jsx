@@ -56,34 +56,35 @@ useEffect(() => {
   }, [sidebarOpen]);
 
   // Submit product (mock API)
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+const handleSubmit = (e) => {
+  e.preventDefault();
 
-    const product = { name, price: parseFloat(price), category, image, description, rating };
-
-    try {
-      const res = await fetch("/api/products", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(product),
-      });
-
-      if (res.ok) {
-        showToast("Product added successfully!", "success");
-        setName("");
-        setPrice("");
-        setCategory("Men's Clothing");
-        setImage("");
-        setDescription("");
-        setRating(0);
-      } else {
-        showToast("Failed to add product.", "error");
-      }
-    } catch (error) {
-      console.error("Error adding product:", error);
-      showToast("Error adding product. Check console.", "error");
-    }
+  const newProduct = {
+    id: Date.now(),
+    name,
+    price: parseFloat(price),
+    category,
+    image,
+    description,
+    rating,
   };
+
+const existingProducts = JSON.parse(localStorage.getItem("shopsProducts")) || [];
+existingProducts.push(newProduct);
+localStorage.setItem("shopsProducts", JSON.stringify(existingProducts));
+
+
+  showToast("Product added successfully!", "success");
+
+  // Reset form
+  setName("");
+  setPrice("");
+  setCategory("All");
+  setImage("");
+  setDescription("");
+  setRating(0);
+};
+
 
   // Save marquee to localStorage
   const saveMarquee = () => {

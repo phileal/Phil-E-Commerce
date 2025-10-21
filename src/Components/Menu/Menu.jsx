@@ -212,7 +212,7 @@ export default function Store() {
     setReviews(updatedAll);
     clearDraft(productName);
     Toastify({
-      text: "Review submitted — thank you! ✅",
+      text: "Review submitted succesfully thank you! ✅",
       duration: 3000,
       gravity: "top",
       position: "right",

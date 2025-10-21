@@ -42,7 +42,7 @@ function GlobalNetworkAndLoader({ children }) {
   useEffect(() => {
     if (firstRouteChange.current) {
       firstRouteChange.current = false;
-      return; // ✅ skip first route change (first load)
+      return;
     }
 
     setRouteLoading(true);
